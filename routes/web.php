@@ -87,8 +87,6 @@ Route::prefix('customer')
     ->group( function () {
         Route::get('/',[OrderManagentController::class, 'index'])->name('index');
         Route::get('show/{id}',[OrderManagentController::class, 'show'])->name('show');
-        Route::get('edit/{id}',[OrderManagentController::class, 'edit'])->name('edit');
-        Route::get('destroy/{id}',[OrderManagentController::class, 'destroy'])->name('destroy');
     });
     });
 
