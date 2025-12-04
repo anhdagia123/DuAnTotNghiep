@@ -128,7 +128,7 @@
                         <p class="text-muted">
                             Hiện tại không có tài xế nào đang online hoặc ở gần vị trí giao hàng.
                         </p>
-                        <a href="{{ route('hub.index') }}" class="btn btn-outline-primary mt-3">
+                        <a href="{{ route('hub.income.index') }}" class="btn btn-outline-primary mt-3">
                             <i class="bi bi-arrow-left"></i> Quay lại
                         </a>
                     </div>
@@ -191,7 +191,7 @@
                             <button type="submit" class="btn btn-success btn-lg" id="submitBtn">
                                 <i class="bi bi-send"></i> Phát đơn cho tài xế đã chọn
                             </button>
-                            <a href="{{ route('hub.index') }}" class="btn btn-outline-secondary">
+                            <a href="{{ route('hub.income.index') }}" class="btn btn-outline-secondary">
                                 <i class="bi bi-arrow-left"></i> Quay lại
                             </a>
                         </div>
