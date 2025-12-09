@@ -128,7 +128,7 @@
                         <p class="text-muted">
                             Hiện tại không có tài xế nào đang online hoặc ở gần vị trí giao hàng.
                         </p>
-                        <a href="{{ route('hub.income.index') }}" class="btn btn-outline-primary mt-3">
+                        <a href="{{ route('hub.index') }}" class="btn btn-outline-primary mt-3">
                             <i class="bi bi-arrow-left"></i> Quay lại
                         </a>
                     </div>
