@@ -22,6 +22,7 @@ use App\Http\Controllers\Drivers\OrderReturnController;
 use App\Http\Controllers\Drivers\PickupController;
 use App\Http\Controllers\Hub\BankAccountHubController;
 use App\Http\Controllers\Hub\Cod\HubCodController;
+use App\Http\Controllers\Hub\Cod\HubDebtController;
 use App\Http\Controllers\Hub\HubController;
 use App\Http\Controllers\Hub\HubIssueManagementController;
 use App\Http\Controllers\Hub\HubReturnController;
@@ -59,17 +60,20 @@ Route::get('/register', [AuthController::class, 'showRegisterForm'])->name('regi
 Route::post('/register', [AuthController::class, 'register']);
 
 // Ứng tuyển tài xế
-Route::get('apply', [DriverController::class, 'create'])->name('driver.apply');
-Route::post('apply', [DriverController::class, 'store'])->name('driver.store');
-Route::get('/post-offices-apply', [DriverController::class, 'getByProvince'])
-    ->name('driver-apply.getByProvince');
+Route::prefix('driver-apply')->name('driver-apply.')->group(function () {
+    Route::get('/', [DriverController::class, 'create'])->name('index');
+    Route::post('/', [DriverController::class, 'store'])->name('store');
+    Route::get('nearby', [DriverController::class, 'getNearbyPostOffices'])->name('nearby');
+    Route::get('/check-location', [DriverController::class, 'checkLocation'])->name('check-location');
+});
 
 
-Route::get('/api/post-offices/{id}/detail', [DriverController::class, 'getDetail'])
-    ->name('api.post-offices.detail');
 
-Route::get('/api/post-offices/nearest', [DriverController::class, 'getNearby'])
-    ->name('api.post-offices.nearest');
+// Route::get('/api/post-offices/{id}/detail', [DriverController::class, 'getDetail'])
+//     ->name('api.post-offices.detail');
+
+// Route::get('/api/post-offices/nearest', [DriverController::class, 'getNearby'])
+//     ->name('api.post-offices.nearest');
 // Admin
 Route::prefix('admin')
     ->middleware(['auth', 'role:admin'])
@@ -82,6 +86,8 @@ Route::prefix('admin')
         Route::get('/system', [IncomeController::class, 'adminSystemOverview'])->name('income.system');
         // Chi tiết platform fee
         Route::get('/platform-fee', [IncomeController::class, 'adminPlatformFeeDetail'])->name('income.platform-fee');
+         Route::get('/income/hub/{hubId}', [IncomeController::class, 'hubDetail'])
+            ->name('income.hub-detail');
         // Duyệt hồ sơ tài xế
         Route::get('/driver', [AdminDriverController::class, 'index'])->name('driver.index');
         Route::get('/driver/{id}', [AdminDriverController::class, 'show'])->name('driver.show');
@@ -338,9 +344,11 @@ Route::prefix('customer')
             ->group(function () {
             Route::get('create', [OrderController::class, 'create'])->name('create');
             Route::post('store', [OrderController::class, 'store'])->name('store');
+            Route::get('/{id}/edit', [OrderController::class, 'edit'])->name('edit');
+            Route::put('/{id}', [OrderController::class, 'update'])->name('update');
             Route::post('calculate', [OrderController::class, 'calculate'])->name('calculate');
             Route::get('/api/post-offices', [OrderController::class, 'getNearby'])->name('getNearby');
-            Route::get('/addresses/list', [OrderController::class, 'list'])->name('addresses.list');
+            Route::get('/addresses/list', [OrderController::class, '  list'])->name('addresses.list');
         });
         // Quản lý đơn hàng
         Route::prefix('orderManagent')
@@ -392,23 +400,19 @@ Route::prefix('customer')
         });
         // Quản lý COD
         Route::prefix('cod')->name('cod.')->group(function () {
-            // Danh sách giao dịch
+            // ✅ ROUTE TĨNH TRƯỚC (phải đặt trước route động)
             Route::get('/', [CustomerCodController::class, 'index'])->name('index');
-
             Route::get('/statistics', [CustomerCodController::class, 'statistics'])->name('statistics');
+            
+            // ✅ ROUTE ĐỘNG SAU (order by: tĩnh trước, động sau)
             Route::get('/{id}/qr', [CustomerCodController::class, 'getQrCode'])->name('qr');
-
-            // Chi tiết giao dịch
-            Route::get('/{id}', [CustomerCodController::class, 'show'])->name('show');
-
-            // Thống kê
-            // routes/web.php
-            Route::post('/{id}/pay-debt', [CustomerCodController::class, 'payDebt'])->name('payDebt');
-            // ✅ NEW: Thanh toán phí hệ thống (Sender)
+            Route::get('/{id}/debt-qr', [CustomerCodController::class, 'getDebtQrCode'])->name('debt-qr');
             Route::post('/{id}/pay-fee', [CustomerCodController::class, 'paySenderFee'])->name('pay-fee');
-
-            // ✅ NEW: Yêu cầu xử lý ưu tiên
+            Route::post('/{id}/pay-debt', [CustomerCodController::class, 'payDebt'])->name('payDebt');
             Route::post('/{id}/request-priority', [CustomerCodController::class, 'requestPriority'])->name('request-priority');
+            
+            // ✅ Route show phải ở cuối cùng (vì {id} bắt cả cái gì không match được)
+            Route::get('/{id}', [CustomerCodController::class, 'show'])->name('show');
         });
     });
 
@@ -506,15 +510,28 @@ Route::prefix('hub')
         Route::prefix('cod')->name('cod.')->group(function () {
             // Dashboard & List
             Route::get('/', [HubCodController::class, 'index'])->name('index');
+            Route::get('get-system-qr', [HubCodController::class, 'getSystemQrCode'])
+                ->name('get-system-qr');
             Route::get('/{id}', [HubCodController::class, 'show'])->name('show');
 
-            // Payment Actions
-            Route::post('/{id}/confirm', [HubCodController::class, 'confirmFromDriver'])->name('confirm');
-            Route::post('/{id}/transfer-sender', [HubCodController::class, 'transferToSender'])->name('transfer-sender');
+             // lấy mã qr
+            Route::get('/get-sender-qr/{id}', [HubCodController::class, 'getSenderQrCode'])
+                ->name('get-sender-qr');
+                
+            Route::get('/get-driver-qr/{id}', [HubCodController::class, 'getDriverQrCode'])
+                ->name('get-driver-qr');
+                
+            Route::post('/transfer-system', [HubCodController::class, 'transferToSystem'])->name('transfer-system');
+             // Step 1: Hub confirms receiving money from Driver
+            Route::post('/{id}/confirm-from-driver', [HubCodController::class, 'confirmFromDriver'])->name('confirm-from-driver');
+            // Step 2: Hub transfers COD to Sender
+            Route::post('/{id}/transfer-to-sender', [HubCodController::class, 'transferToSender'])->name('transfer-to-sender');
+            // Step 3: Hub pays commission to Driver
             Route::post('/{id}/pay-driver-commission', [HubCodController::class, 'payDriverCommission'])->name('pay-driver-commission');
             Route::post('/batch-pay-driver-commission', [HubCodController::class, 'batchPayDriverCommission'])->name('batch-pay-driver-commission');
-            Route::post('/transfer-system', [HubCodController::class, 'transferToSystem'])->name('transfer-system');
-
+            
+            // Step 4: Hub transfers COD fee to System
+            Route::post('/transfer-to-system', [HubCodController::class, 'transferToSystem'])->name('transfer-to-system');
             // Dispute
             Route::post('/{id}/dispute', [HubCodController::class, 'dispute'])->name('dispute');
 
@@ -526,8 +543,6 @@ Route::prefix('hub')
             Route::get('/logs/export', [HubCodController::class, 'exportActivityLogs'])->name('export-activity-logs');
             Route::get('/logs/recent', [HubCodController::class, 'getRecentLogs'])->name('recent-logs');
 
-            // API Routes
-            Route::get('/api/system-qr', [HubCodController::class, 'getSystemQrCode'])->name('api.system-qr');
         });
         // ✅ ISSUE MANAGEMENT - Xử lý vấn đề giao hàng
         Route::prefix('issues')
@@ -577,6 +592,25 @@ Route::prefix('hub')
                 // API: Lấy danh sách tài xế
                 Route::get('/{id}/available-drivers', 'getAvailableDriversApi')->name('available-drivers');
             });
+        Route::prefix('debt')->name('debt.')->controller(HubDebtController::class)->group(function () {
+            // Danh sách các khoản nợ cần xác nhận
+            Route::get('/', 'index')->name('index');
+            
+            // Chi tiết một khoản thanh toán nợ
+            Route::get('/{id}', 'show')->name('show');
+            
+            // Xác nhận đã nhận tiền trả nợ
+            Route::post('/{id}/confirm', 'confirm')->name('confirm');
+            
+            // Từ chối thanh toán nợ
+            Route::post('/{id}/reject', 'reject')->name('reject');
+            
+            // Xác nhận hàng loạt
+            Route::post('/batch-confirm', 'batchConfirm')->name('batch-confirm');
+            
+            // Thống kê nợ
+            Route::get('/statistics/overview', 'statistics')->name('statistics');
+        });
     });
 
 // PUBLIC TRACKING ROUTES - Không cần auth
