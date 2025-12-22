@@ -126,7 +126,7 @@
             <div class="col-md-7">
                 <div class="card-body p-4">
                     <h4 class="text-center mb-4 text-primary fw-bold">
-                        Ứng tuyển tài xế giao hàng Viettel Post - Hà Nội
+                        Ứng tuyển tài xế giao hàng Giao24H - Hà Nội
                     </h4>
 
                     @if(session('success'))
